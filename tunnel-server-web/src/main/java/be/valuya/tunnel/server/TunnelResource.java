@@ -52,7 +52,9 @@ public class TunnelResource {
     @Path("ko/{id}")
     public void disconnect(@PathParam("id") String id) throws IOException {
         PersistentConnection persistentConnection = getPersistentConnection(id, false);
-        connectionService.disconnect(persistentConnection);
+        if (persistentConnection != null) {
+            connectionService.disconnect(persistentConnection);
+        }
     }
 
     @PUT

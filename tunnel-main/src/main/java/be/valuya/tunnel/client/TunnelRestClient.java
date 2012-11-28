@@ -43,8 +43,8 @@ public class TunnelRestClient extends TunnelRestClientBase {
 
     public String disconnect(String connectionId) {
         String url = MessageFormat.format("/ko/{0}", connectionId);
-        WebResource connectWebResource = tunnelWebResource.path(url);
-        put(connectWebResource);
+        WebResource disconnectWebResource = tunnelWebResource.path(url);
+        put(disconnectWebResource);
         decrementConnectionCount();
         String message = MessageFormat.format("Disconnected {0}. Connection count: {1,number,0}", connectionId, connectionCount);
         LOG.log(Level.INFO, message);
@@ -56,29 +56,19 @@ public class TunnelRestClient extends TunnelRestClientBase {
         WebResource upWebResource = tunnelWebResource.path(url);
         Builder builder = upWebResource.accept(MediaType.APPLICATION_JSON_TYPE).type(MediaType.APPLICATION_JSON_TYPE);
         String message = MessageFormat.format("Up {0}, size= {1,number,0}", connectionId, data.length);
-        LOG.log(Level.INFO, message);
+        LOG.log(Level.FINE, message);
         put(builder, data);
     }
 
     public byte[] down(String connectionId, int maxSize) {
         String url = MessageFormat.format("/dn/{0}/{1,number,0}", connectionId, maxSize);
         WebResource downWebResource = tunnelWebResource.path(url);
-        try {
-            byte[] byteArray = new byte[0];
-            byte[] output = getResource(downWebResource, byteArray.getClass());
-            int length = output == null ? -1 : output.length;
-            String message = MessageFormat.format("Down {0}, size= {1,number,0}", connectionId, length);
-            LOG.log(Level.INFO, message);
-            return output;
-        } catch (UniformInterfaceException uniformInterfaceException) {
-            ClientResponse response = uniformInterfaceException.getResponse();
-            Status status = response.getClientResponseStatus();
-            if (status == Status.NO_CONTENT) {
-                return null;
-            } else {
-                throw uniformInterfaceException;
-            }
-        }
+        byte[] byteArray = new byte[0];
+        byte[] output = getResource(downWebResource, byteArray.getClass());
+        int length = output == null ? -1 : output.length;
+        String message = MessageFormat.format("Down {0}, size= {1,number,0}", connectionId, length);
+        LOG.log(Level.FINE, message);
+        return output;
     }
 
     private static void incrementConnectionCount() {

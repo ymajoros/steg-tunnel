@@ -4,9 +4,13 @@
  */
 package be.valuya.tunnel.client;
 
+import be.valuya.tunnel.util.TunnelServerException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.text.MessageFormat;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -14,6 +18,7 @@ import java.net.Socket;
  */
 public class TunnelReadThread extends Thread {
 
+    private static final Logger LOG = Logger.getLogger(TunnelReadThread.class.getName());
     private final TunnelRestClient tunnelClient;
     private final String connectionId;
     private final Socket socket;
@@ -27,18 +32,27 @@ public class TunnelReadThread extends Thread {
     @Override
     public void run() {
         try {
-            OutputStream outputStream = socket.getOutputStream();
-            while (true) {
-                byte[] readBytes = null;
-                readBytes = tunnelClient.down(connectionId, 1024);
-                if (readBytes == null) {
-                    socket.close();
-                    break;
+            try {
+                OutputStream outputStream = socket.getOutputStream();
+                while (true) {
+                    byte[] readBytes = null;
+                    readBytes = tunnelClient.down(connectionId, 1024);
+                    if (readBytes == null) {
+                        socket.close();
+                        tunnelClient.disconnect(connectionId);
+                        break;
+                    }
+                    outputStream.write(readBytes);
                 }
-                outputStream.write(readBytes);
+            } catch (TunnelServerException tunnelServerException) {
+                String errorMessage = tunnelServerException.getMessage();
+                String message = MessageFormat.format("Server read error for {0}: {1}", connectionId, errorMessage);
+                LOG.log(Level.WARNING, message);
+                socket.close();
+                tunnelClient.disconnect(connectionId);
             }
-        } catch (IOException exception) {
-            System.out.println("Read error");
+        } catch (IOException ioException) {
+            LOG.log(Level.WARNING, "Read error for " + connectionId, ioException);
         }
     }
 }

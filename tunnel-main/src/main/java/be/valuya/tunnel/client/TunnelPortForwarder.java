@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -80,7 +81,7 @@ public class TunnelPortForwarder {
 
         byte[] buffer = new byte[1024];
         while (true) {
-            int read = inputStream.read(buffer);
+            int read = read(inputStream, buffer);
             if (read < 0) {
                 break;
             }
@@ -96,7 +97,17 @@ public class TunnelPortForwarder {
         return thread;
     }
 
-    private String createThreadId() {
+    private static String createThreadId() {
         return "tunnel-port-forwarder-" + threadNr++;
+    }
+
+    private int read(InputStream inputStream, byte[] buffer) throws IOException {
+        try {
+            int read = inputStream.read(buffer);
+            return read;
+        } catch (SocketException socketException) {
+            // better check if other thread closed the socket; if not, throw anyway
+            return -1;
+        }
     }
 }
